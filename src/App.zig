@@ -1,7 +1,6 @@
 const std = @import("std");
 const glfw = @cImport(@cInclude("GLFW/glfw3.h"));
 
-// const Arena = @import("Arena.zig");
 const Renderer = @import("Renderer.zig");
 const Logger = @import("Logger.zig");
 

@@ -8,4 +8,10 @@
         "build.zig.zon",
         "src",
     },
+    .dependencies = .{
+        .zgl = .{
+            .url = "https://github.com/ziglibs/zgl/archive/caf811fb8b778184128772e57dfcb96be2351c43.tar.gz",
+            .hash = "zgl-1.1.0-p_NpAJJECgDSDHYHH_W6rX0snxnFoJ4JZZ0FV5_vqjjy",
+        },
+    },
 }

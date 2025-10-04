@@ -1,7 +1,7 @@
 const std = @import("std");
+const gl = @import("zgl");
 
 const glfw = @cImport(@cInclude("GLFW/glfw3.h"));
-const gl = @cImport(@cInclude("GL/glew.h"));
 
 const Renderer = @This();
 
@@ -14,7 +14,7 @@ pub const ContextSettings = struct {
 };
 
 pub const Context = struct {
-    native_context_handle: *glfw.GLFWwindow,
+    native_handle: *glfw.GLFWwindow,
 
     fn init(settings: ContextSettings) !Context {
         const ctx = glfw.glfwCreateWindow(
@@ -25,11 +25,11 @@ pub const Context = struct {
             null,
         ) orelse return error.InvalidContext;
 
-        return Context{ .native_context_handle = ctx };
+        return Context{ .native_handle = ctx };
     }
 
     fn deinit(self: *Context) void {
-        glfw.glfwDestroyWindow(self.native_context_handle);
+        glfw.glfwDestroyWindow(self.native_handle);
     }
 };
 
@@ -50,22 +50,21 @@ pub fn init(
 
     glfw.glfwSwapInterval(1);
 
-    _ = glewInit() orelse return error.GlewInitFailed;
-
     return Renderer{ .context = context };
 }
 
 pub fn windowShouldClose(self: Renderer) bool {
-    return glfw.glfwWindowShouldClose(self.context.native_context_handle) == glfw.GLFW_TRUE;
+    return glfw.glfwWindowShouldClose(self.context.native_handle) == glfw.GLFW_TRUE;
 }
 
 pub fn renderFrame(self: *Renderer) void {
-    glfw.glfwSwapBuffers(self.context.native_context_handle);
+    glfw.glfwSwapBuffers(self.context.native_handle);
+    // TODO: write actual rendering
 }
 
 pub fn setCurrentContext(self: *Renderer, ctx: *Context) void {
     self.context = ctx;
-    glfw.glfwMakeContextCurrent(self.context.native_context_handle);
+    glfw.glfwMakeContextCurrent(self.context.native_handle);
 }
 
 pub fn deinit(self: *Renderer) void {
@@ -77,11 +76,4 @@ fn glfwInit() !void {
     if (glfw.glfwInit() == glfw.GLFW_FALSE) {
         return error.GlfwInitFailed;
     }
-}
-
-/// Returns `null` if GLEW was initialized successfully,
-/// otherwise returns error code.
-fn glewInit() ?u8 {
-    const glew_status = gl.glewInit();
-    return if (glew_status == gl.GLEW_OK) null else @intCast(glew_status);
 }

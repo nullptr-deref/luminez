@@ -10,7 +10,12 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
     exe_mod.linkSystemLibrary("glfw", .{});
-    exe_mod.linkSystemLibrary("GLEW", .{});
+
+    const zgl = b.dependency("zgl", .{
+        .target = target,
+        .optimize = optimize
+    });
+    exe_mod.addImport("zgl", zgl.module("zgl"));
 
     const exe = b.addExecutable(.{
         .name = "lumines",
