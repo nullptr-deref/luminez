@@ -11,10 +11,14 @@ const EXIT_FAILURE = 127;
 running: bool,
 renderer: Renderer,
 
-pub fn init(width: usize, height: usize, title: []const u8) !App {
+pub fn init(width: usize,
+    height: usize,
+    title: []const u8,
+    allocator: std.mem.Allocator,
+) !App {
     return App{
         .running = true,
-        .renderer = try Renderer.init(width, height, title),
+        .renderer = try Renderer.init(width, height, title, allocator),
     };
 }
 

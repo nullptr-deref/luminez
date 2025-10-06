@@ -7,20 +7,22 @@ const Renderer = @This();
 
 const Logger = @import("Logger.zig");
 
-pub const ContextSettings = struct {
-    width: usize,
-    height: usize,
-    title: []const u8,
+
+pub const SizedBuffer = struct {
+    buffer: gl.Buffer,
+    len: usize,
+    element_type: ?gl.ElementType // present only if buffer is an element buffer
 };
 
 pub const Context = struct {
+    const Self = @This();
     native_handle: *glfw.GLFWwindow,
 
-    fn init(settings: ContextSettings) !Context {
+    fn init(width: usize, height: usize, title: []const u8) !Context {
         const ctx = glfw.glfwCreateWindow(
-            @intCast(settings.width),
-            @intCast(settings.height),
-            @ptrCast(settings.title),
+            @intCast(width),
+            @intCast(height),
+            @ptrCast(title),
             null,
             null,
         ) orelse return error.InvalidContext;
@@ -28,29 +30,35 @@ pub const Context = struct {
         return Context{ .native_handle = ctx };
     }
 
-    fn deinit(self: *Context) void {
+    fn deinit(self: Self) void {
         glfw.glfwDestroyWindow(self.native_handle);
     }
 };
 
 context: Context,
+targets: std.ArrayList(RenderTarget),
 
 pub fn init(
     width: usize,
     height: usize,
-    title: []const u8
+    title: []const u8,
+    allocator: std.mem.Allocator,
 ) !Renderer {
     try glfwInit();
+    const context = try Context.init(width, height, title);
+    swapInterval(1);
+    return Renderer{
+        .context = context,
+        .targets = std.ArrayList(RenderTarget).init(allocator),
+    };
+}
 
-    const context = try Context.init(.{
-        .width = width,
-        .height = height,
-        .title = title,
-    });
+pub fn registerTarget(self: *Renderer, tgt: RenderTarget) void {
+    try self.targets.append(tgt);
+}
 
-    glfw.glfwSwapInterval(1);
-
-    return Renderer{ .context = context };
+fn swapInterval(interval: u32) void {
+    glfw.glfwSwapInterval(@intCast(interval));
 }
 
 pub fn windowShouldClose(self: Renderer) bool {
@@ -59,7 +67,17 @@ pub fn windowShouldClose(self: Renderer) bool {
 
 pub fn renderFrame(self: *Renderer) void {
     glfw.glfwSwapBuffers(self.context.native_handle);
-    // TODO: write actual rendering
+    for (self.targets.items) |t| {
+        t.vao.bind();
+        t.vbo.buffer.bind(gl.BufferTarget.array_buffer);
+        t.program.use();
+        if (t.indices) |indices| {
+            indices.buffer.bind(gl.BufferTarget.element_array_buffer);
+            gl.drawElements(t.primitive_type, indices.len, indices.element_type.?, 0);
+        } else {
+            gl.drawArrays(t.primitive_type, 0, t.vbo.len);
+        }
+    }
 }
 
 pub fn setCurrentContext(self: *Renderer, ctx: *Context) void {
@@ -77,3 +95,15 @@ fn glfwInit() !void {
         return error.GlfwInitFailed;
     }
 }
+
+/// Render target is a wrapper around vertex buffer, vertex array and
+/// shader program used to render them properly.
+const RenderTarget = struct {
+    program: gl.Program,
+    vao: gl.VertexArray,
+    vbo: SizedBuffer,
+    indices: ?SizedBuffer,
+    primitive_type: gl.PrimitiveType,
+};
+
+//zig vim:et:ts=4:sw=4:tw=80
