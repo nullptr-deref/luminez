@@ -11,11 +11,12 @@ pub fn build(b: *std.Build) void {
     });
     exe_mod.linkSystemLibrary("glfw", .{});
 
-    const zgl = b.dependency("zgl", .{
+    const zgl = b.createModule(.{
+        .root_source_file = b.path("modules/zgl/src/zgl.zig"),
         .target = target,
-        .optimize = optimize
+        .optimize = optimize,
     });
-    exe_mod.addImport("zgl", zgl.module("zgl"));
+    exe_mod.addImport("zgl", zgl);
 
     const exe = b.addExecutable(.{
         .name = "lumines",
